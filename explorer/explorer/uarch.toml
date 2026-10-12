@@ -53,6 +53,13 @@ uarch = "Zen 3"
 year = 2021
 
 [[model]]
+cpu_model = "AMD EPYC 9124 16-Core Processor"
+label = "EPYC 9124"
+vendor = "AMD"
+uarch = "Zen 4"
+year = 2022
+
+[[model]]
 cpu_model = "AMD EPYC 9254 24-Core Processor"
 label = "EPYC 9254"
 vendor = "AMD"
@@ -69,6 +76,13 @@ year = 2023
 [[model]]
 cpu_model = "AMD EPYC 9135 16-Core Processor"
 label = "EPYC 9135"
+vendor = "AMD"
+uarch = "Zen 5"
+year = 2024
+
+[[model]]
+cpu_model = "AMD EPYC 9555 64-Core Processor"
+label = "EPYC 9555"
 vendor = "AMD"
 uarch = "Zen 5"
 year = 2024
