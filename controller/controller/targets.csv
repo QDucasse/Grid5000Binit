@@ -17,7 +17,7 @@ AMD EPYC 7413,Zen 3,abacus25,Rennes,4,abaca,abacus22 esterel35
 AMD EPYC 7453,Zen 3,ecotaxe,Nantes,2,default+exotic,
 AMD EPYC 7513,Zen 3,chuc,Lille,8,default,grat esterel37 esterel38
 AMD EPYC 9124,Zen 4,esterel44,Sophia,1,abaca,
-AMD EPYC 9254,Zen 4,gres,Nancy,7,abaca,musa abacus27 esterel43
+AMD EPYC 9254,Zen 4,abacus27,Rennes,1,abaca,gres musa esterel43
 AMD EPYC 9754,Zen 4c,grdix,Nancy,16,abaca,
 AMD EPYC 9135,Zen 5,abacus29,Rennes,1,abaca,esterel45
 AMD EPYC 9355,Zen 5,granite,Nancy,18,abaca,
