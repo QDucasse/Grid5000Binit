@@ -47,7 +47,10 @@ node_recovered, node_done, replay_start, replay_done, replay_applied.
   dropped and `FPU*` maps to `X87`.
 - Classification (`controller/classify.py`): `crash`; exception kinds differ -> `exception_mismatch`; only key
   `flag` differs and the XOR lies within the instruction's undefined flags -> `undef_flags_only`; else
-  `defined_state`. Worker status `skipped` is stored with class `skipped`. Mismatch rows keep the full got/expected states.
+  `defined_state`. The undefined flags are those of `instruction_undefined_flags` plus DIV / IDIV (all six,
+  missing from the table); for shifts and rotates they depend on the masked count of the state (0: none,
+  1: AF for shifts, > 1: AF / OF, CF for SHL / SHR when count >= size), and SHLD / SHRD with a count above the
+  operand size also leave the low bits of the destination free (`rax` or `mem0_value` may then differ too). Worker status `skipped` is stored with class `skipped`. Mismatch rows keep the full got/expected states.
 - Only mismatches are stored; OK cases are counted (`ok_ids` is not persisted).
 
 ## Objective and runs

@@ -6,7 +6,7 @@ compares it with the rows the cluster's nodes hold in g5k_results and proposes a
 `apply` carries the accepted ones out."""
 from psycopg.types.json import Jsonb
 
-from .classify import classify, diff_keys
+from .classify import INITIAL_STATE_ARGS, INITIAL_STATE_SQL, classify, diff_keys
 
 ACTIONS = ("delete", "overwrite", "insert")
 MAX_REPEAT = 1000
@@ -30,12 +30,13 @@ JOIN test_results tr ON tr.test_case_id = tc.id AND tr.state_index = s.idx
 """
 
 # The latest replay of each input, kept when it is finished and not applied yet.
-LATEST_SQL = """
+LATEST_SQL = f"""
 SELECT * FROM (
     SELECT DISTINCT ON (p.cluster, p.test_case_id, p.state_index)
            p.id, p.cluster, p.test_case_id, p.state_index, p.repeat, p.status,
            p.batch_id, p.node_id, p.worker_version, p.runs, n.host, n.save_mode,
            tc.instruction, tr.final_state, tr.exception_kind,
+           {INITIAL_STATE_SQL.replace("tr.state_index", "p.state_index")} AS initial_state,
            (SELECT array_agg(u.flag) FROM instruction_undefined_flags u
             WHERE u.instruction_id = tc.instruction_id) AS undefined_flags
     FROM g5k_replays p
@@ -204,7 +205,7 @@ def describe(p, stored) -> tuple[str | None, list[str], dict]:
     if status == "ok":
         return "ok", [], {}
     cls, keys = classify(status, p["final_state"], p["exception_kind"], state, exc,
-                         p["undefined_flags"] or [], p["save_mode"])
+                         p["undefined_flags"] or [], p["save_mode"], p["instruction"], p["initial_state"])
     changed: dict = {}
     for s in stored:
         old, new = s["got_final_state"] or {}, state or {}
@@ -226,7 +227,7 @@ def stored_rows(conn, replays) -> dict[tuple, list[dict]]:
 def report(conn, cluster: str | None = None) -> list[dict]:
     """The latest finished replay of each input that has not been applied, with the stored rows
     it is compared with and the proposed action."""
-    replays = conn.execute(LATEST_SQL, (cluster, cluster)).fetchall()
+    replays = conn.execute(LATEST_SQL, (*INITIAL_STATE_ARGS, cluster, cluster)).fetchall()
     stored = stored_rows(conn, replays)
     for p in replays:
         p["stored"] = stored.get((p["cluster"], *key(p)), [])

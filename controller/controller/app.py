@@ -16,7 +16,7 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
 from . import replay
-from .classify import CLASSES, classify
+from .classify import CLASSES, INITIAL_STATE_ARGS, INITIAL_STATE_SQL, classify
 from .config import Config
 from .features import normalize
 from .schema import migrate
@@ -366,12 +366,12 @@ def create_app(cfg: Config) -> FastAPI:
                 exp = {
                     (r["test_case_id"], r["state_index"]): r
                     for r in conn.execute(
-                        """SELECT tr.test_case_id, tr.state_index, tr.final_state, tr.exception_kind,
-                                  tc.instruction, tc.instruction_id
+                        f"""SELECT tr.test_case_id, tr.state_index, tr.final_state, tr.exception_kind,
+                                  tc.instruction, tc.instruction_id, {INITIAL_STATE_SQL} AS initial_state
                            FROM unnest(%s::bigint[], %s::int[]) AS q(tc, si)
                            JOIN test_results tr ON tr.test_case_id=q.tc AND tr.state_index=q.si
                            JOIN test_cases tc ON tc.id = tr.test_case_id""",
-                        ([k[0] for k in keys], [k[1] for k in keys]),
+                        (*INITIAL_STATE_ARGS, [k[0] for k in keys], [k[1] for k in keys]),
                     ).fetchall()
                 }
                 iids = list({e["instruction_id"] for e in exp.values()})
@@ -395,6 +395,7 @@ def create_app(cfg: Config) -> FastAPI:
                         m.got_final_state, m.got_exception_kind,
                         undef.get(e["instruction_id"], []) if e else [],
                         b.save_mode or n_save_mode,
+                        e["instruction"] if e else None, e["initial_state"] if e else None,
                     )
                     counts[cls] = counts.get(cls, 0) + 1
                     conn.execute(
