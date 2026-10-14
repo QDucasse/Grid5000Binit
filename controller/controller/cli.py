@@ -117,6 +117,10 @@ def main(argv=None) -> None:
     a.add_argument("--action", required=True, choices=["delete", "overwrite", "insert"])
     a.add_argument("--tc", type=int, help="only this test_case_id")
     a.add_argument("--insn", help="only instructions containing this text")
+    a = sub.add_parser("reclassify", help="classify the stored mismatches of some mnemonics again "
+                                          "(after a change to classify.py); adjusts counts and the explorer summary")
+    a.add_argument("--mnemonic", action="append", help="repeatable (default: those whose rules changed)")
+    a.add_argument("--dry-run", action="store_true", help="only report what would change")
     args = p.parse_args(argv)
 
     import os
@@ -129,6 +133,15 @@ def main(argv=None) -> None:
         from .schema import backfill_class_counts
         dsn = os.environ.get("X86DB_DSN", "postgresql://x86db:x86db@localhost:5432/x86db")
         print(f"counted {backfill_class_counts(dsn)} results")
+    elif args.cmd == "reclassify":
+        from psycopg.rows import dict_row
+        from . import reclassify
+        dsn = os.environ.get("X86DB_DSN", "postgresql://x86db:x86db@localhost:5432/x86db")
+        with psycopg.connect(dsn, row_factory=dict_row, autocommit=True) as conn:
+            total = reclassify.run(conn, args.mnemonic or reclassify.DEFAULT_MNEMONICS, args.dry_run)
+        for (m, old, new), n in sorted(total.items()):
+            print(f"{m} {old} -> {new}: {n}")
+        print(("would change " if args.dry_run else "changed ") + f"{sum(total.values())} rows")
     elif args.cmd == "replay":
         run_replay(args, os.environ.get("X86DB_DSN", "postgresql://x86db:x86db@localhost:5432/x86db"))
     elif args.cmd == "migrate":
